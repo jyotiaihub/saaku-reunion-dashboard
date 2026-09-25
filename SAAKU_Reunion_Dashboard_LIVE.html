@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SAAKU Silver Jubilee — Live Registration Dashboard</title>
+<style>
+:root{
+  --ink:#0E2A22; --navy:#27405F; --blue:#4C6C94; --orange:#C9691F; --green:#5E8F36;
+  --bg:#F2F3F6; --card:#FFFFFF; --line:#E4E6EB; --muted:#6B7686; --danger:#C0392B; --ok:#1E7A4C;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#12161C; --card:#1B2028; --line:#2A2F38; --muted:#9AA3B2; --ink:#EDEFF3; }
+}
+:root[data-theme="dark"]{ --bg:#12161C; --card:#1B2028; --line:#2A2F38; --muted:#9AA3B2; --ink:#EDEFF3; }
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; font-family:-apple-system,Segoe UI,Roboto,"Noto Sans Bengali",sans-serif;
+  background:var(--bg); color:var(--ink);
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.wrap{max-width:1120px;margin:0 auto;padding:20px 16px 60px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:var(--orange)}
+.brand h1{font-size:19px;margin:0;font-weight:700}
+.badge{font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:#FDEBD0;color:#8A4B0B}
+.badge.live{background:#DCF3E4;color:var(--ok)}
+.sub{color:var(--muted);font-size:12.5px;margin:2px 0 18px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.kpi .l{font-size:12px;color:var(--muted);font-weight:600}
+.kpi .v{font-size:22px;font-weight:700;margin-top:4px}
+.kpi .v.small{font-size:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
+@media(max-width:820px){.grid2,.grid3{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.card h3{margin:0 0 10px;font-size:14.5px;font-weight:700}
+.card .hint{font-size:11.5px;color:var(--muted);margin:-6px 0 10px}
+select,input[type=number]{
+  font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);
+  background:var(--bg);color:var(--ink);
+}
+.chartWrap{position:relative;height:250px}
+.chartWrap.tall{height:300px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:8px}
+.settings label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
+.settings input{width:100%}
+details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;margin-bottom:14px}
+summary{cursor:pointer;font-weight:700;font-size:13.5px}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted);font-weight:600;font-size:11.5px}
+tfoot td{font-weight:700;border-top:2px solid var(--line);border-bottom:none}
+.tblwrap{overflow-x:auto}
+.budgetBox{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.diff{font-size:24px;font-weight:700}
+.diff.pos{color:var(--ok)}
+.diff.neg{color:var(--danger)}
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:24px}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:700;background:#EEEDFE;color:#3C3489}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span><h1>SAAKU Silver Jubilee — Registration Dashboard</h1></div>
+    <span id="modeBadge" class="badge">DEMO DATA</span>
+  </div>
+  <div class="sub" id="updatedLine"></div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="l">মোট রেজিস্ট্রেশন</div><div class="v" id="kTotalReg">-</div></div>
+    <div class="kpi"><div class="l">অংশগ্রহণকারী (অতিথিসহ)</div><div class="v" id="kTotalAttendees">-</div></div>
+    <div class="kpi"><div class="l">মোট কালেকশন</div><div class="v" id="kTotalAmount">-</div></div>
+    <div class="kpi"><div class="l">মোট Lifetime সদস্য</div><div class="v" id="kLifetime">-</div></div>
+    <div class="kpi"><div class="l">গড় কালেকশন/এলামনাই</div><div class="v small" id="kAvg">-</div></div>
+  </div>
+
+  <details open>
+    <summary>⚙️ সেটিংস — মোট এলামনাই সংখ্যা ও মাথাপিছু বাজেট</summary>
+    <div class="settings">
+      <div><label>Batch 99-14 মোট এলামনাই</label><input type="number" id="tot9914" min="0"></div>
+      <div><label>Batch 15-16 মোট এলামনাই</label><input type="number" id="tot1516" min="0"></div>
+      <div><label>Batch 17-20 মোট এলামনাই</label><input type="number" id="tot1720" min="0"></div>
+      <div><label>Regular/Current মোট</label><input type="number" id="totReg" min="0"></div>
+      <div><label>মাথাপিছু বাজেট (টাকা)</label><input type="number" id="budgetPerHead" min="0"></div>
+    </div>
+  </details>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="row"><h3 style="margin:0">বাজেট বনাম কালেকশন</h3></div>
+    <div class="budgetBox">
+      <div><div class="l" style="font-size:12px;color:var(--muted);font-weight:600">প্রয়োজনীয় বাজেট (মাথাপিছু × মোট অংশগ্রহণকারী)</div>
+        <div class="v" id="kNeeded">-</div></div>
+      <div><div class="l" style="font-size:12px;color:var(--muted);font-weight:600">পার্থক্য</div>
+        <div class="diff" id="kDiff">-</div></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <h3>ব্যাচভিত্তিক বিস্তারিত হিসাব</h3>
+    <div class="hint">প্রতিটি ব্যাচে কতজন রেজিস্ট্রেশন করেছেন, তাদের মধ্যে কতজন Lifetime সদস্য (তাই ফি ফ্রি), কতজন সাধারণ ফি দিয়েছেন, এবং মোট কত টাকা উঠেছে</div>
+    <div class="tblwrap">
+    <table>
+      <thead><tr>
+        <th>ব্যাচ</th><th>রেজিস্ট্রেশন</th><th>মোট এলামনাই</th><th>% পূরণ</th>
+        <th>Lifetime সদস্য</th><th>ফি প্রদানকারী</th><th>ব্যাচ ফি/জন</th><th>মোট কালেকশন</th>
+      </tr></thead>
+      <tbody id="tableBody"></tbody>
+      <tfoot><tr id="tableFoot"></tr></tfoot>
+    </table>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="row"><h3>ব্যাচভিত্তিক রেজিস্ট্রেশন বনাম মোট এলামনাই</h3>
+        <select id="regChartType"><option value="bar">Bar</option><option value="horizontalBar">Horizontal Bar</option></select>
+      </div>
+      <div class="chartWrap"><canvas id="regChart" role="img" aria-label="ব্যাচভিত্তিক রেজিস্ট্রেশন সংখ্যা বার চার্ট">ব্যাচভিত্তিক রেজিস্ট্রেশন সংখ্যা</canvas></div>
+    </div>
+    <div class="card">
+      <div class="row"><h3>ব্যাচভিত্তিক কালেকশন (টাকা)</h3>
+        <select id="moneyChartType"><option value="doughnut">Donut</option><option value="pie">Pie</option><option value="bar">Bar</option></select>
+      </div>
+      <div class="chartWrap"><canvas id="moneyChart" role="img" aria-label="ব্যাচভিত্তিক টাকা কালেকশন চার্ট">ব্যাচভিত্তিক কালেকশন</canvas></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="row"><h3>ব্যাচ অনুযায়ী Lifetime সদস্য <span class="tag">ফি ফ্রি</span></h3>
+        <select id="lifeChartType"><option value="bar">Bar</option><option value="pie">Pie</option></select>
+      </div>
+      <div class="hint">কোন ব্যাচে কতজন আগে থেকেই SAAKU Lifetime সদস্য (তাই রিইউনিয়ন ফি তাদের জন্য প্রযোজ্য নয়)</div>
+      <div class="chartWrap"><canvas id="lifeChart" role="img" aria-label="ব্যাচ অনুযায়ী লাইফটাইম সদস্য সংখ্যা চার্ট">ব্যাচ অনুযায়ী লাইফটাইম সদস্য</canvas></div>
+    </div>
+    <div class="card">
+      <div class="row"><h3>অতিথি বিভাজন</h3>
+        <select id="guestChartType"><option value="bar">Bar</option><option value="pie">Pie</option></select>
+      </div>
+      <div class="hint">স্পাউস/গেস্ট/ড্রাইভার/শিশু — কতজন করে এবং তাদের কাছ থেকে কত টাকা</div>
+      <div class="chartWrap"><canvas id="guestChart" role="img" aria-label="অতিথি ক্যাটাগরি অনুযায়ী সংখ্যা ও টাকার চার্ট">অতিথি বিভাজন চার্ট</canvas></div>
+    </div>
+  </div>
+
+  <footer>SAAKU — Soil, Water and Environment Alumni Association of Khulna University</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+/* ===================== CONFIG ===================== */
+/* এখানে আপনার Google Apps Script Web App URL বসান (deploy করার পর যে লিংক পাবেন)।
+   খালি রাখলে নিচের DEMO ডেটা দিয়ে ড্যাশবোর্ড চলবে। */
+const CONFIG = {
+  API_URL: "https://script.google.com/macros/s/AKfycbzveycRoWONItDvUkMJSiU1lLpTiwReLHxVJtdvXZz6P6Au2auxmPpXA-LS56e9TGNbjQ/exec",
+  REFRESH_MS: 15000
+};
+
+const BATCH_ORDER = ["99-14","15-16","17-20","Regular"];
+const BATCH_LABEL = {"99-14":"Batch 99-14","15-16":"Batch 15-16","17-20":"Batch 17-20","Regular":"Regular/Current"};
+const BATCH_COLOR = {"99-14":"#2a78d6","15-16":"#eb6834","17-20":"#1baf7a","Regular":"#eda100"};
+const GUEST_KEYS = ["spouse","guest","driver","child5"];
+const GUEST_LABEL = {spouse:"স্পাউস",guest:"গেস্ট",driver:"ড্রাইভার",child5:"শিশু (>৫ বছর)"};
+const GUEST_COLOR = {spouse:"#e87ba4",guest:"#2a78d6",driver:"#eda100",child5:"#1baf7a"};
+
+const DEMO_DATA = {"batchTotals": {"99-14": 210, "15-16": 85, "17-20": 110, "Regular": 90}, "fees": {"99-14": 2500, "15-16": 1500, "17-20": 1000, "Regular": 500}, "guestFees": {"spouse": 1000, "guest": 1000, "driver": 500, "child5": 500, "child0to5": 0}, "registrations": [{"name": "Rakib Hossain", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 500}, {"name": "Rasel Ahmed", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 1, "child0to5": 1, "amount": 4000}, {"name": "Rahim Khan", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Nadia Mia", "batch": "17-20", "isLifetime": 1, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Rasel Akter", "batch": "17-20", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 1, "child5": 0, "child0to5": 0, "amount": 500}, {"name": "Karim Akter", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 2, "driver": 0, "child5": 0, "child0to5": 1, "amount": 5500}, {"name": "Mahin Khan", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 1, "amount": 3500}, {"name": "Imran Mia", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 1, "child0to5": 1, "amount": 2500}, {"name": "Foysal Khan", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 1500}, {"name": "Jannatul Khan", "batch": "15-16", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Shakil Chowdhury", "batch": "Regular", "isLifetime": 0, "spouse": 1, "guest": 2, "driver": 1, "child5": 0, "child0to5": 0, "amount": 4000}, {"name": "Priyanka Khan", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 1, "child5": 0, "child0to5": 1, "amount": 5000}, {"name": "Rumana Rahman", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 0, "child5": 1, "child0to5": 1, "amount": 5000}, {"name": "Shanto Khan", "batch": "15-16", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Anika Akter", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3500}, {"name": "Anika Sheikh", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 1, "child0to5": 0, "amount": 2000}, {"name": "Shanto Islam", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 2, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2000}, {"name": "Karim Sheikh", "batch": "17-20", "isLifetime": 0, "spouse": 1, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3000}, {"name": "Karim Akter", "batch": "15-16", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Zahid Rahman", "batch": "15-16", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 1, "amount": 2500}, {"name": "Foysal Khan", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Sabbir Sheikh", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 1, "child0to5": 0, "amount": 4000}, {"name": "Zahid Islam", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Imran Chowdhury", "batch": "99-14", "isLifetime": 1, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Mahin Rahman", "batch": "99-14", "isLifetime": 1, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 1, "amount": 1000}, {"name": "Anika Rahman", "batch": "15-16", "isLifetime": 1, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Priyanka Akter", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Mim Hossain", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Sabbir Mia", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3500}, {"name": "Foysal Akter", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 500}, {"name": "Farhana Ahmed", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Nadia Khan", "batch": "Regular", "isLifetime": 0, "spouse": 1, "guest": 1, "driver": 0, "child5": 0, "child0to5": 1, "amount": 2500}, {"name": "Rumana Ahmed", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 4500}, {"name": "Rumana Ahmed", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 0, "child0to5": 0, "amount": 2000}, {"name": "Priyanka Islam", "batch": "17-20", "isLifetime": 1, "spouse": 0, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Anika Chowdhury", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 1, "amount": 2000}, {"name": "Sabbir Sheikh", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Priyanka Sarkar", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3500}, {"name": "Rahim Hossain", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Sabbir Khan", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 0}, {"name": "Tasnia Sarkar", "batch": "Regular", "isLifetime": 0, "spouse": 1, "guest": 2, "driver": 0, "child5": 0, "child0to5": 1, "amount": 3500}, {"name": "Nusrat Mia", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Karim Chowdhury", "batch": "17-20", "isLifetime": 1, "spouse": 0, "guest": 1, "driver": 0, "child5": 1, "child0to5": 1, "amount": 1500}, {"name": "Sadia Sheikh", "batch": "99-14", "isLifetime": 1, "spouse": 1, "guest": 0, "driver": 1, "child5": 1, "child0to5": 0, "amount": 2000}, {"name": "Mim Hossain", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 0, "child5": 0, "child0to5": 1, "amount": 3000}, {"name": "Rumana Sheikh", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 1, "driver": 1, "child5": 0, "child0to5": 0, "amount": 1500}, {"name": "Anika Khan", "batch": "15-16", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 3000}, {"name": "Tania Mia", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 2, "driver": 0, "child5": 1, "child0to5": 0, "amount": 6000}, {"name": "Arif Khan", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 2, "driver": 1, "child5": 1, "child0to5": 0, "amount": 6500}, {"name": "Sabbir Islam", "batch": "15-16", "isLifetime": 0, "spouse": 1, "guest": 1, "driver": 0, "child5": 1, "child0to5": 0, "amount": 4000}, {"name": "Jannatul Rahman", "batch": "17-20", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 2500}, {"name": "Rasel Sarkar", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1500}, {"name": "Shanto Sarkar", "batch": "99-14", "isLifetime": 1, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 1, "amount": 1000}, {"name": "Moushumi Rahman", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 1, "child5": 0, "child0to5": 1, "amount": 500}, {"name": "Rumana Sheikh", "batch": "17-20", "isLifetime": 0, "spouse": 1, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3000}, {"name": "Anika Chowdhury", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 1, "child5": 1, "child0to5": 1, "amount": 1000}, {"name": "Tanvir Sheikh", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 3000}, {"name": "Nadia Akter", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 0, "child5": 1, "child0to5": 0, "amount": 5000}, {"name": "Arif Ahmed", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 0, "child0to5": 1, "amount": 1500}, {"name": "Sadia Rahman", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3000}, {"name": "Rumana Khan", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 0, "child0to5": 0, "amount": 2000}, {"name": "Imran Akter", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Israt Hossain", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 500}, {"name": "Mahin Mia", "batch": "Regular", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1500}, {"name": "Imran Hossain", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 0, "child0to5": 0, "amount": 1500}, {"name": "Nadia Khan", "batch": "17-20", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2000}, {"name": "Rasel Khan", "batch": "Regular", "isLifetime": 0, "spouse": 1, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Rasel Chowdhury", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 1, "driver": 0, "child5": 1, "child0to5": 1, "amount": 1500}, {"name": "Jannatul Chowdhury", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 500}, {"name": "Tania Akter", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1500}, {"name": "Jannatul Mia", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 1, "child5": 0, "child0to5": 0, "amount": 500}, {"name": "Rakib Islam", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 1000}, {"name": "Anika Chowdhury", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 500}, {"name": "Tanvir Sheikh", "batch": "99-14", "isLifetime": 1, "spouse": 1, "guest": 2, "driver": 0, "child5": 1, "child0to5": 0, "amount": 3500}, {"name": "Mahin Chowdhury", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 1, "child0to5": 0, "amount": 3000}, {"name": "Mim Hossain", "batch": "Regular", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1500}, {"name": "Priyanka Rahman", "batch": "15-16", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 0}, {"name": "Shoumik Sheikh", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 1, "amount": 500}, {"name": "Nusrat Hossain", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 3000}, {"name": "Foysal Ahmed", "batch": "17-20", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 0}, {"name": "Nadia Ahmed", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 500}, {"name": "Imran Islam", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 1, "driver": 1, "child5": 0, "child0to5": 1, "amount": 1500}, {"name": "Rakib Islam", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Shakil Khan", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 3000}, {"name": "Shoumik Hossain", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Lamia Chowdhury", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 1, "child5": 0, "child0to5": 0, "amount": 4000}, {"name": "Mehedi Ahmed", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 1, "child5": 1, "child0to5": 0, "amount": 4500}, {"name": "Farhana Mia", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3000}, {"name": "Tania Akter", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 1, "child0to5": 0, "amount": 2000}, {"name": "Zahid Sheikh", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 1, "child0to5": 0, "amount": 4000}, {"name": "Mehedi Ahmed", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 500}, {"name": "Shoumik Sarkar", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 1, "child0to5": 0, "amount": 2000}, {"name": "Shoumik Chowdhury", "batch": "17-20", "isLifetime": 0, "spouse": 1, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3000}, {"name": "Israt Sarkar", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 0, "child5": 1, "child0to5": 0, "amount": 3000}, {"name": "Sabbir Hossain", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 500}, {"name": "Arif Mia", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 0, "child0to5": 0, "amount": 3000}, {"name": "Anika Khan", "batch": "Regular", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 1, "child5": 1, "child0to5": 0, "amount": 2500}, {"name": "Rumana Rahman", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 1, "amount": 0}, {"name": "Shoumik Sarkar", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 1, "child5": 1, "child0to5": 1, "amount": 3500}, {"name": "Tania Hossain", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 1, "amount": 2500}, {"name": "Jannatul Chowdhury", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3500}, {"name": "Imran Sheikh", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 1, "child0to5": 1, "amount": 4000}, {"name": "Rakib Ahmed", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Rasel Hossain", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 0, "child5": 0, "child0to5": 0, "amount": 4500}, {"name": "Tasnia Khan", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 1, "child0to5": 1, "amount": 2500}, {"name": "Farhana Sheikh", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Karim Khan", "batch": "99-14", "isLifetime": 1, "spouse": 1, "guest": 0, "driver": 1, "child5": 1, "child0to5": 1, "amount": 2000}, {"name": "Tasnia Islam", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 0, "child0to5": 0, "amount": 3000}, {"name": "Mim Chowdhury", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 2000}, {"name": "Tasnia Sarkar", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3500}, {"name": "Moushumi Sheikh", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 1, "driver": 1, "child5": 0, "child0to5": 0, "amount": 5000}, {"name": "Sadia Akter", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Mim Hossain", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Tasnia Mia", "batch": "17-20", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 1, "amount": 2000}, {"name": "Hasib Akter", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 0, "child5": 1, "child0to5": 0, "amount": 5000}, {"name": "Nadia Islam", "batch": "15-16", "isLifetime": 1, "spouse": 1, "guest": 0, "driver": 1, "child5": 1, "child0to5": 0, "amount": 2000}, {"name": "Tania Chowdhury", "batch": "15-16", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 0}, {"name": "Mehedi Khan", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3500}, {"name": "Rahim Islam", "batch": "15-16", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 1, "child5": 0, "child0to5": 0, "amount": 3000}, {"name": "Anika Mia", "batch": "17-20", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 1, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Mim Sarkar", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 1, "child5": 1, "child0to5": 0, "amount": 3500}, {"name": "Jannatul Sarkar", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 3000}, {"name": "Imran Islam", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 1000}, {"name": "Farhana Rahman", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Tanvir Ahmed", "batch": "Regular", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1500}, {"name": "Anika Rahman", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 3000}, {"name": "Arif Akter", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 1, "amount": 1000}, {"name": "Shoumik Akter", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Sadia Akter", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 1, "child5": 1, "child0to5": 1, "amount": 2500}, {"name": "Jannatul Mia", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 0, "child0to5": 1, "amount": 3500}, {"name": "Arif Sheikh", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 1, "amount": 1000}, {"name": "Priyanka Sarkar", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3500}, {"name": "Foysal Mia", "batch": "Regular", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1500}, {"name": "Moushumi Rahman", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 1, "amount": 500}, {"name": "Mahin Rahman", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 500}, {"name": "Shanto Khan", "batch": "15-16", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 1, "child5": 1, "child0to5": 0, "amount": 3500}, {"name": "Anika Islam", "batch": "17-20", "isLifetime": 0, "spouse": 1, "guest": 2, "driver": 1, "child5": 0, "child0to5": 1, "amount": 4500}, {"name": "Shanto Chowdhury", "batch": "99-14", "isLifetime": 1, "spouse": 1, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2000}, {"name": "Tanvir Chowdhury", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 1000}, {"name": "Karim Islam", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 1, "amount": 1500}, {"name": "Shoumik Ahmed", "batch": "15-16", "isLifetime": 0, "spouse": 1, "guest": 2, "driver": 0, "child5": 0, "child0to5": 1, "amount": 4500}, {"name": "Tania Sarkar", "batch": "15-16", "isLifetime": 1, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Nadia Sheikh", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 1, "child0to5": 0, "amount": 2500}, {"name": "Imran Mia", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Anika Sarkar", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1500}, {"name": "Shoumik Rahman", "batch": "15-16", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 1, "amount": 2500}, {"name": "Rahim Islam", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 0, "child0to5": 0, "amount": 3000}, {"name": "Nadia Hossain", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 1, "child5": 0, "child0to5": 0, "amount": 4000}, {"name": "Arif Hossain", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 0, "child0to5": 1, "amount": 1000}, {"name": "Mehedi Sheikh", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2000}, {"name": "Sadia Mia", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 0, "child0to5": 1, "amount": 2000}, {"name": "Shanto Islam", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 500}, {"name": "Moushumi Ahmed", "batch": "Regular", "isLifetime": 0, "spouse": 1, "guest": 2, "driver": 1, "child5": 0, "child0to5": 0, "amount": 4000}, {"name": "Anika Mia", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Nusrat Islam", "batch": "Regular", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1500}, {"name": "Sadia Sarkar", "batch": "15-16", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Arif Sarkar", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 0, "child5": 1, "child0to5": 0, "amount": 5000}, {"name": "Tania Sheikh", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 1, "child0to5": 1, "amount": 3500}, {"name": "Rumana Ahmed", "batch": "17-20", "isLifetime": 0, "spouse": 1, "guest": 2, "driver": 0, "child5": 0, "child0to5": 0, "amount": 4000}, {"name": "Mehedi Ahmed", "batch": "17-20", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2000}, {"name": "Priyanka Rahman", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 1, "child5": 0, "child0to5": 1, "amount": 4000}, {"name": "Mehedi Sarkar", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 1, "child5": 1, "child0to5": 0, "amount": 3500}, {"name": "Moushumi Islam", "batch": "17-20", "isLifetime": 0, "spouse": 1, "guest": 2, "driver": 0, "child5": 0, "child0to5": 1, "amount": 4000}, {"name": "Zahid Akter", "batch": "17-20", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 1, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Mehedi Hossain", "batch": "15-16", "isLifetime": 0, "spouse": 1, "guest": 1, "driver": 1, "child5": 0, "child0to5": 0, "amount": 4000}, {"name": "Anika Hossain", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Karim Islam", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 500}, {"name": "Rasel Chowdhury", "batch": "15-16", "isLifetime": 1, "spouse": 0, "guest": 1, "driver": 1, "child5": 1, "child0to5": 0, "amount": 2000}, {"name": "Farhana Sheikh", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 1000}, {"name": "Hasib Islam", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3500}, {"name": "Sabbir Islam", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 4500}, {"name": "Shanto Hossain", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 2, "driver": 0, "child5": 1, "child0to5": 0, "amount": 2500}, {"name": "Tasnia Khan", "batch": "17-20", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 1, "amount": 2000}, {"name": "Foysal Khan", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 1, "child0to5": 0, "amount": 3500}, {"name": "Rasel Rahman", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3000}, {"name": "Arif Chowdhury", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 1, "child0to5": 0, "amount": 3000}, {"name": "Moushumi Hossain", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Mehedi Sarkar", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Farhana Rahman", "batch": "15-16", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 500}, {"name": "Israt Mia", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 2, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2000}, {"name": "Sabbir Hossain", "batch": "99-14", "isLifetime": 1, "spouse": 1, "guest": 2, "driver": 1, "child5": 0, "child0to5": 0, "amount": 3500}, {"name": "Rasel Islam", "batch": "Regular", "isLifetime": 0, "spouse": 1, "guest": 2, "driver": 0, "child5": 1, "child0to5": 0, "amount": 4000}, {"name": "Rakib Akter", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 4500}, {"name": "Tasnia Sheikh", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 0, "child5": 1, "child0to5": 0, "amount": 5000}, {"name": "Nusrat Chowdhury", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 0, "child0to5": 1, "amount": 3000}, {"name": "Farhana Sheikh", "batch": "Regular", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 1, "child5": 1, "child0to5": 0, "amount": 1000}, {"name": "Mahin Mia", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 1, "child0to5": 0, "amount": 2000}, {"name": "Rakib Islam", "batch": "99-14", "isLifetime": 1, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 500}, {"name": "Foysal Ahmed", "batch": "Regular", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1500}, {"name": "Nadia Sheikh", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Tasnia Rahman", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 1, "child0to5": 0, "amount": 2500}, {"name": "Farhana Akter", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 1, "child5": 0, "child0to5": 0, "amount": 4000}, {"name": "Foysal Sarkar", "batch": "17-20", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2000}, {"name": "Karim Rahman", "batch": "Regular", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1500}, {"name": "Rakib Mia", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3500}, {"name": "Shakil Islam", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 1, "child0to5": 0, "amount": 3500}, {"name": "Sabbir Akter", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 0, "child5": 0, "child0to5": 0, "amount": 4500}, {"name": "Karim Islam", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Hasib Sarkar", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1500}, {"name": "Priyanka Ahmed", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 1, "amount": 1000}, {"name": "Tanvir Sheikh", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 1, "child5": 1, "child0to5": 0, "amount": 5500}, {"name": "Foysal Chowdhury", "batch": "99-14", "isLifetime": 1, "spouse": 1, "guest": 2, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3000}, {"name": "Moushumi Akter", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Zahid Sarkar", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 1, "child0to5": 1, "amount": 4000}, {"name": "Tanvir Akter", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 0, "child5": 0, "child0to5": 0, "amount": 4500}, {"name": "Priyanka Islam", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1500}, {"name": "Israt Hossain", "batch": "Regular", "isLifetime": 0, "spouse": 1, "guest": 2, "driver": 0, "child5": 1, "child0to5": 0, "amount": 4000}, {"name": "Shakil Hossain", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 1, "amount": 2500}, {"name": "Sabbir Akter", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3500}, {"name": "Rahim Mia", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 1, "child5": 0, "child0to5": 0, "amount": 2000}, {"name": "Priyanka Akter", "batch": "17-20", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 2500}, {"name": "Karim Sheikh", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 4000}, {"name": "Priyanka Sheikh", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 0, "amount": 1000}, {"name": "Sadia Sarkar", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 1, "child5": 1, "child0to5": 0, "amount": 5500}, {"name": "Foysal Hossain", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 500}, {"name": "Mehedi Hossain", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 1, "child0to5": 1, "amount": 1500}, {"name": "Shoumik Rahman", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3500}, {"name": "Karim Sarkar", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2000}, {"name": "Israt Hossain", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 500}, {"name": "Sadia Sheikh", "batch": "Regular", "isLifetime": 0, "spouse": 1, "guest": 2, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3500}, {"name": "Tasnia Sheikh", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 1, "child5": 1, "child0to5": 0, "amount": 3000}, {"name": "Israt Hossain", "batch": "Regular", "isLifetime": 1, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 1000}, {"name": "Sabbir Ahmed", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Mehedi Sarkar", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3500}, {"name": "Shakil Islam", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 1, "amount": 2500}, {"name": "Nadia Sheikh", "batch": "15-16", "isLifetime": 0, "spouse": 1, "guest": 1, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3500}, {"name": "Mim Islam", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 1, "child5": 0, "child0to5": 0, "amount": 4000}, {"name": "Nusrat Chowdhury", "batch": "17-20", "isLifetime": 0, "spouse": 0, "guest": 2, "driver": 0, "child5": 1, "child0to5": 0, "amount": 3500}, {"name": "Imran Ahmed", "batch": "Regular", "isLifetime": 0, "spouse": 0, "guest": 1, "driver": 0, "child5": 1, "child0to5": 0, "amount": 2000}, {"name": "Shanto Akter", "batch": "17-20", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 1, "amount": 2000}, {"name": "Israt Akter", "batch": "15-16", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 1, "amount": 1500}, {"name": "Mehedi Rahman", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Shanto Sheikh", "batch": "99-14", "isLifetime": 0, "spouse": 0, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 2500}, {"name": "Shanto Akter", "batch": "99-14", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 0, "child5": 0, "child0to5": 0, "amount": 3500}, {"name": "Mim Khan", "batch": "17-20", "isLifetime": 0, "spouse": 1, "guest": 0, "driver": 1, "child5": 0, "child0to5": 0, "amount": 2500}]};
+
+let charts = {};
+let latest = null;
+
+function fmtTk(n){ return "৳" + Math.round(n).toLocaleString('en-IN'); }
+
+function loadSettings(){
+  try{ const raw = localStorage.getItem('saaku_dash_settings_v2'); if(raw) return JSON.parse(raw); }catch(e){}
+  return {};
+}
+function saveSettings(s){ try{ localStorage.setItem('saaku_dash_settings_v2', JSON.stringify(s)); }catch(e){} }
+
+function initSettingsUI(defaultTotals){
+  const s = loadSettings();
+  const ids = {tot9914:'99-14', tot1516:'15-16', tot1720:'17-20', totReg:'Regular'};
+  Object.keys(ids).forEach(id=>{
+    const el = document.getElementById(id);
+    const key = ids[id];
+    el.value = (s.totals && s.totals[key] != null) ? s.totals[key] : (defaultTotals[key] ?? 0);
+    el.addEventListener('input', persistAndRender);
+  });
+  const bp = document.getElementById('budgetPerHead');
+  bp.value = s.budgetPerHead != null ? s.budgetPerHead : 800;
+  bp.addEventListener('input', persistAndRender);
+}
+function currentSettings(){
+  const ids = {tot9914:'99-14', tot1516:'15-16', tot1720:'17-20', totReg:'Regular'};
+  const totals = {};
+  Object.keys(ids).forEach(id=>{ totals[ids[id]] = Number(document.getElementById(id).value)||0; });
+  const budgetPerHead = Number(document.getElementById('budgetPerHead').value)||0;
+  return {totals, budgetPerHead};
+}
+function persistAndRender(){ saveSettings(currentSettings()); if(latest) render(latest); }
+
+function aggregate(data){
+  const perBatch = {};
+  BATCH_ORDER.forEach(b=> perBatch[b] = {count:0, amount:0, lifetime:0, paying:0});
+  const guestCounts = {spouse:0,guest:0,driver:0,child5:0};
+  const guestAmounts = {spouse:0,guest:0,driver:0,child5:0};
+  const gfee = data.guestFees || {spouse:1000,guest:1000,driver:500,child5:500};
+  let totalAttendeesGuests = 0;
+  let totalLifetime = 0;
+
+  (data.registrations||[]).forEach(r=>{
+    const b = perBatch[r.batch] ? r.batch : null;
+    if(b){
+      perBatch[b].count += 1;
+      perBatch[b].amount += Number(r.amount)||0;
+      if(r.isLifetime){ perBatch[b].lifetime += 1; totalLifetime += 1; }
+      else { perBatch[b].paying += 1; }
+    }
+    GUEST_KEYS.forEach(k=>{
+      const c = Number(r[k])||0;
+      guestCounts[k]+=c;
+      guestAmounts[k]+= c*(gfee[k]||0);
+      totalAttendeesGuests += c;
+    });
+  });
+
+  const totalReg = (data.registrations||[]).length;
+  const totalAmount = Object.values(perBatch).reduce((a,b)=>a+b.amount,0);
+  return {perBatch, guestCounts, guestAmounts, totalReg, totalAttendeesGuests, totalAmount, totalLifetime};
+}
+
+function ensureChart(key, ctxId, config){
+  const ctx = document.getElementById(ctxId);
+  if(charts[key]) charts[key].destroy();
+  charts[key] = new Chart(ctx, config);
+}
+
+function render(data){
+  const agg = aggregate(data);
+  const {totals, budgetPerHead} = currentSettings();
+  const fees = data.fees || {"99-14":2500,"15-16":1500,"17-20":1000,"Regular":500};
+
+  document.getElementById('kTotalReg').textContent = agg.totalReg.toLocaleString('en-IN');
+  const totalAttendees = agg.totalReg + agg.totalAttendeesGuests;
+  document.getElementById('kTotalAttendees').textContent = totalAttendees.toLocaleString('en-IN');
+  document.getElementById('kTotalAmount').textContent = fmtTk(agg.totalAmount);
+  document.getElementById('kLifetime').textContent = agg.totalLifetime.toLocaleString('en-IN');
+  document.getElementById('kAvg').textContent = agg.totalReg ? fmtTk(agg.totalAmount/agg.totalReg) : fmtTk(0);
+
+  const needed = budgetPerHead * totalAttendees;
+  document.getElementById('kNeeded').textContent = fmtTk(needed);
+  const diff = agg.totalAmount - needed;
+  const diffEl = document.getElementById('kDiff');
+  diffEl.textContent = (diff>=0? "+":"") + fmtTk(diff);
+  diffEl.className = "diff " + (diff>=0 ? "pos":"neg");
+
+  const labels = BATCH_ORDER.map(b=>BATCH_LABEL[b]);
+  const regCounts = BATCH_ORDER.map(b=>agg.perBatch[b].count);
+  const regTotals = BATCH_ORDER.map(b=>totals[b]||0);
+  const moneyVals = BATCH_ORDER.map(b=>agg.perBatch[b].amount);
+  const lifeVals = BATCH_ORDER.map(b=>agg.perBatch[b].lifetime);
+  const colors = BATCH_ORDER.map(b=>BATCH_COLOR[b]);
+
+  const regType = document.getElementById('regChartType').value;
+  ensureChart('reg','regChart',{
+    type:'bar',
+    data:{ labels, datasets:[
+      {label:'রেজিস্ট্রেশন', data: regCounts, backgroundColor: colors, borderRadius:4},
+      {label:'মোট এলামনাই', data: regTotals, backgroundColor:'#c3c2b7', borderRadius:4}
+    ]},
+    options:{
+      indexAxis: regType==='horizontalBar' ? 'y' : 'x',
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:true, position:'bottom', labels:{boxWidth:10,font:{size:11}}}},
+      scales:{ x:{ticks:{font:{size:11}}}, y:{beginAtZero:true, ticks:{font:{size:11}}} }
+    }
+  });
+
+  const moneyType = document.getElementById('moneyChartType').value;
+  ensureChart('money','moneyChart',{
+    type: moneyType,
+    data:{ labels, datasets:[{ data: moneyVals, backgroundColor: colors }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display: moneyType!=='bar', position:'bottom', labels:{boxWidth:10,font:{size:11}}}},
+      scales: moneyType==='bar' ? {x:{ticks:{font:{size:11}}}, y:{beginAtZero:true,ticks:{font:{size:11}}}} : undefined
+    }
+  });
+
+  const lifeType = document.getElementById('lifeChartType').value;
+  ensureChart('life','lifeChart',{
+    type: lifeType,
+    data:{ labels, datasets:[{label:'Lifetime সদস্য', data: lifeVals, backgroundColor: colors}]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display: lifeType==='pie', position:'bottom', labels:{boxWidth:10,font:{size:11}}}},
+      scales: lifeType==='bar' ? {x:{ticks:{font:{size:11}}}, y:{beginAtZero:true,ticks:{font:{size:11},precision:0}}} : undefined
+    }
+  });
+
+  const gLabels = GUEST_KEYS.map(k=>GUEST_LABEL[k]);
+  const gCounts = GUEST_KEYS.map(k=>agg.guestCounts[k]);
+  const gColors = GUEST_KEYS.map(k=>GUEST_COLOR[k]);
+  const guestType = document.getElementById('guestChartType').value;
+  ensureChart('guest','guestChart',{
+    type: guestType,
+    data:{ labels: gLabels, datasets:[
+      {label:'সংখ্যা', data: gCounts, backgroundColor: gColors, borderRadius: guestType==='bar'?4:0}
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:true, position:'bottom', labels:{boxWidth:10,font:{size:11}}}},
+      scales: guestType==='bar' ? {x:{ticks:{font:{size:11}}}, y:{beginAtZero:true,ticks:{font:{size:11},precision:0}}} : undefined
+    }
+  });
+
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = BATCH_ORDER.map(b=>{
+    const p = agg.perBatch[b];
+    const t = totals[b]||0;
+    const pct = t>0 ? Math.round((p.count/t)*100) : 0;
+    return `<tr>
+      <td><b>${BATCH_LABEL[b]}</b></td>
+      <td>${p.count}</td>
+      <td>${t}</td>
+      <td>${pct}%</td>
+      <td>${p.lifetime}</td>
+      <td>${p.paying}</td>
+      <td>${fmtTk(fees[b]||0)}</td>
+      <td><b>${fmtTk(p.amount)}</b></td>
+    </tr>`;
+  }).join('');
+
+  const totRegAll = BATCH_ORDER.reduce((a,b)=>a+agg.perBatch[b].count,0);
+  const totTotalsAll = BATCH_ORDER.reduce((a,b)=>a+(totals[b]||0),0);
+  const totPct = totTotalsAll>0 ? Math.round((totRegAll/totTotalsAll)*100) : 0;
+  const totLifeAll = BATCH_ORDER.reduce((a,b)=>a+agg.perBatch[b].lifetime,0);
+  const totPayAll = BATCH_ORDER.reduce((a,b)=>a+agg.perBatch[b].paying,0);
+  document.getElementById('tableFoot').innerHTML =
+    `<td>সর্বমোট</td><td>${totRegAll}</td><td>${totTotalsAll}</td><td>${totPct}%</td>
+     <td>${totLifeAll}</td><td>${totPayAll}</td><td>—</td><td>${fmtTk(agg.totalAmount)}</td>`;
+}
+
+function fetchJSONP(url){
+  return new Promise(function(resolve, reject){
+    const cbName = 'saakuCb_' + Date.now() + '_' + Math.floor(Math.random()*10000);
+    const timer = setTimeout(function(){ cleanup(); reject(new Error('timeout')); }, 12000);
+    function cleanup(){
+      try{ delete window[cbName]; }catch(e){ window[cbName] = undefined; }
+      if(script.parentNode) script.parentNode.removeChild(script);
+      clearTimeout(timer);
+    }
+    window[cbName] = function(data){ cleanup(); resolve(data); };
+    const script = document.createElement('script');
+    const sep = url.indexOf('?') === -1 ? '?' : '&';
+    script.src = url + sep + 'callback=' + cbName;
+    script.onerror = function(){ cleanup(); reject(new Error('script load error')); };
+    document.body.appendChild(script);
+  });
+}
+
+async function fetchLive(){
+  try{
+    const json = await fetchJSONP(CONFIG.API_URL);
+    document.getElementById('modeBadge').textContent = 'LIVE';
+    document.getElementById('modeBadge').className = 'badge live';
+    document.getElementById('updatedLine').textContent = 'সবশেষ আপডেট: ' + new Date().toLocaleString('bn-BD');
+    return json;
+  }catch(e){
+    document.getElementById('updatedLine').textContent = 'লাইভ ডেটা আনতে সমস্যা হয়েছে (JSONP), ডেমো ডেটা দেখানো হচ্ছে।';
+    return null;
+  }
+}
+
+async function tick(){
+  let data = null;
+  if(CONFIG.API_URL){ data = await fetchLive(); }
+  if(!data){
+    data = DEMO_DATA;
+    if(!CONFIG.API_URL){
+      document.getElementById('updatedLine').textContent = 'ডেমো ডেটা (২৩৫টি সিমুলেটেড এন্ট্রি) — আপনার Google Sheet কানেক্ট করলে এই একই লেআউটে আসল ডেটা দেখাবে।';
+    }
+  }
+  latest = data;
+  render(data);
+}
+
+['regChartType','moneyChartType','lifeChartType','guestChartType'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', ()=> latest && render(latest));
+});
+
+initSettingsUI(DEMO_DATA.batchTotals);
+tick();
+if(CONFIG.API_URL){ setInterval(tick, CONFIG.REFRESH_MS); }
+</script>
+</body>
+</html>
