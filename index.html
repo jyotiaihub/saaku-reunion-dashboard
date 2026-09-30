@@ -137,6 +137,33 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:24px}
     </div>
   </div>
 
+  <div class="card" style="margin-bottom:14px">
+    <h3>ব্যাচ অনুযায়ী গেস্ট/অতিথি বিভাজন</h3>
+    <div class="hint">কোন ব্যাচের এলামনাই কয়জন স্পাউস/গেস্ট/ড্রাইভার/শিশু (>৫ বছর) নিয়ে এসেছেন, এবং তাদের থেকে কত টাকা এসেছে</div>
+    <div class="tblwrap">
+    <table>
+      <thead><tr>
+        <th>ব্যাচ</th><th>স্পাউস</th><th>গেস্ট</th><th>ড্রাইভার</th><th>শিশু (>৫ বছর)</th>
+        <th>মোট অতিথি</th><th>অতিথি থেকে কালেকশন</th>
+      </tr></thead>
+      <tbody id="guestTableBody"></tbody>
+      <tfoot><tr id="guestTableFoot"></tr></tfoot>
+    </table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="row"><h3 style="margin:0">Lifetime সদস্যদের তালিকা</h3><span class="tag" id="lifetimeCountTag">০ জন</span></div>
+    <div class="hint">যারা রেজিস্ট্রেশনের সময় SAAKU Lifetime Membership উল্লেখ করেছেন — নাম ও স্টুডেন্ট আইডি (রোল) সহ</div>
+    <div class="tblwrap">
+    <table>
+      <thead><tr><th>#</th><th>নাম</th><th>স্টুডেন্ট আইডি</th><th>ব্যাচ</th></tr></thead>
+      <tbody id="lifetimeTableBody"></tbody>
+    </table>
+    </div>
+    <div class="hint" id="lifetimeNote" style="margin-top:8px"></div>
+  </div>
+
   <div class="grid2">
     <div class="card">
       <div class="row"><h3>ব্যাচভিত্তিক রেজিস্ট্রেশন বনাম মোট এলামনাই</h3>
@@ -276,19 +303,26 @@ document.getElementById('sponsorAddBtn').addEventListener('click', function(){
 
 function aggregate(data){
   const perBatch = {};
-  BATCH_ORDER.forEach(b=> perBatch[b] = {count:0, amount:0, lifetime:0, paying:0});
+  BATCH_ORDER.forEach(b=> perBatch[b] = {
+    count:0, amount:0, lifetime:0, paying:0,
+    guests:{spouse:0,guest:0,driver:0,child5:0}, guestAmount:0
+  });
   const guestCounts = {spouse:0,guest:0,driver:0,child5:0};
   const guestAmounts = {spouse:0,guest:0,driver:0,child5:0};
   const gfee = data.guestFees || {spouse:1000,guest:1000,driver:500,child5:500};
   let totalAttendeesGuests = 0;
   let totalLifetime = 0;
+  const lifetimeMembers = [];
 
   (data.registrations||[]).forEach(r=>{
     const b = perBatch[r.batch] ? r.batch : null;
     if(b){
       perBatch[b].count += 1;
       perBatch[b].amount += Number(r.amount)||0;
-      if(r.isLifetime){ perBatch[b].lifetime += 1; totalLifetime += 1; }
+      if(r.isLifetime){
+        perBatch[b].lifetime += 1; totalLifetime += 1;
+        lifetimeMembers.push({name: r.name || '', studentId: r.studentId || '', batch: b});
+      }
       else { perBatch[b].paying += 1; }
     }
     GUEST_KEYS.forEach(k=>{
@@ -296,12 +330,16 @@ function aggregate(data){
       guestCounts[k]+=c;
       guestAmounts[k]+= c*(gfee[k]||0);
       totalAttendeesGuests += c;
+      if(b){
+        perBatch[b].guests[k] += c;
+        perBatch[b].guestAmount += c*(gfee[k]||0);
+      }
     });
   });
 
   const totalReg = (data.registrations||[]).length;
   const totalAmount = Object.values(perBatch).reduce((a,b)=>a+b.amount,0);
-  return {perBatch, guestCounts, guestAmounts, totalReg, totalAttendeesGuests, totalAmount, totalLifetime};
+  return {perBatch, guestCounts, guestAmounts, totalReg, totalAttendeesGuests, totalAmount, totalLifetime, lifetimeMembers};
 }
 
 function ensureChart(key, ctxId, config){
@@ -313,7 +351,7 @@ function ensureChart(key, ctxId, config){
 function render(data){
   const agg = aggregate(data);
   const {totals, budgetAlumniHead, budgetCurrentHead} = currentSettings();
-  const fees = data.fees || {"99-14":2500,"15-16":1500,"17-20":1000,"Regular":500};
+  const fees = data.fees || {"99-14":2500,"15-16":2000,"17-20":1000,"Regular":500};
 
   document.getElementById('kTotalReg').textContent = agg.totalReg.toLocaleString('en-IN');
   const totalAttendees = agg.totalReg + agg.totalAttendeesGuests;
@@ -428,6 +466,47 @@ function render(data){
   document.getElementById('tableFoot').innerHTML =
     `<td>সর্বমোট</td><td>${totRegAll}</td><td>${totTotalsAll}</td><td>${totPct}%</td>
      <td>${totLifeAll}</td><td>${totPayAll}</td><td>—</td><td>${fmtTk(agg.totalAmount)}</td>`;
+
+  // ---- ব্যাচভিত্তিক গেস্ট/অতিথি টেবিল ----
+  const gtbody = document.getElementById('guestTableBody');
+  gtbody.innerHTML = BATCH_ORDER.map(b=>{
+    const g = agg.perBatch[b].guests;
+    const totalG = g.spouse+g.guest+g.driver+g.child5;
+    return `<tr>
+      <td><b>${BATCH_LABEL[b]}</b></td>
+      <td>${g.spouse}</td><td>${g.guest}</td><td>${g.driver}</td><td>${g.child5}</td>
+      <td><b>${totalG}</b></td>
+      <td>${fmtTk(agg.perBatch[b].guestAmount)}</td>
+    </tr>`;
+  }).join('');
+  const gTotals = {spouse:0,guest:0,driver:0,child5:0};
+  BATCH_ORDER.forEach(b=> GUEST_KEYS.forEach(k=> gTotals[k]+=agg.perBatch[b].guests[k]));
+  const gTotalAll = gTotals.spouse+gTotals.guest+gTotals.driver+gTotals.child5;
+  const gAmountAll = BATCH_ORDER.reduce((a,b)=>a+agg.perBatch[b].guestAmount,0);
+  document.getElementById('guestTableFoot').innerHTML =
+    `<td>সর্বমোট</td><td>${gTotals.spouse}</td><td>${gTotals.guest}</td><td>${gTotals.driver}</td><td>${gTotals.child5}</td>
+     <td>${gTotalAll}</td><td>${fmtTk(gAmountAll)}</td>`;
+
+  // ---- Lifetime সদস্যদের তালিকা ----
+  const lifeMembers = agg.lifetimeMembers.slice().sort((a,b)=>{
+    const oa = BATCH_ORDER.indexOf(a.batch), ob = BATCH_ORDER.indexOf(b.batch);
+    if(oa !== ob) return oa - ob;
+    return (a.name||'').localeCompare(b.name||'');
+  });
+  document.getElementById('lifetimeCountTag').textContent = lifeMembers.length + ' জন';
+  const ltbody = document.getElementById('lifetimeTableBody');
+  if(lifeMembers.length === 0){
+    ltbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted)">কোনো Lifetime সদস্য পাওয়া যায়নি</td></tr>';
+  } else {
+    ltbody.innerHTML = lifeMembers.map((m,i)=>
+      `<tr><td>${i+1}</td><td>${m.name || '<span style="color:var(--muted)">— নাম নেই —</span>'}</td>
+       <td>${m.studentId || '<span style="color:var(--muted)">—</span>'}</td><td>${BATCH_LABEL[m.batch]}</td></tr>`
+    ).join('');
+  }
+  const anyMissingId = lifeMembers.length > 0 && lifeMembers.some(m=>!m.studentId);
+  document.getElementById('lifetimeNote').textContent = anyMissingId
+    ? 'নোট: স্টুডেন্ট আইডি (রোল) দেখাতে হলে Apps Script-এ "name" ও "studentId" ফিল্ড যোগ করে রিডিপ্লয় করতে হবে (এই ফিল্ডটি এখনো লাইভ ডেটাতে নেই)।'
+    : '';
 }
 
 function fetchJSONP(url){
@@ -448,28 +527,58 @@ function fetchJSONP(url){
   });
 }
 
+let lastLiveData = null;
+let lastLiveAt = null;
+let consecutiveFailures = 0;
+
 async function fetchLive(){
-  try{
-    const json = await fetchJSONP(CONFIG.API_URL);
-    document.getElementById('modeBadge').textContent = 'LIVE';
-    document.getElementById('modeBadge').className = 'badge live';
-    document.getElementById('updatedLine').textContent = 'সবশেষ আপডেট: ' + new Date().toLocaleString('bn-BD');
-    return json;
-  }catch(e){
-    document.getElementById('updatedLine').textContent = 'লাইভ ডেটা আনতে সমস্যা হয়েছে (JSONP), ডেমো ডেটা দেখানো হচ্ছে।';
-    return null;
-  }
+  const json = await fetchJSONP(CONFIG.API_URL);
+  return json;
 }
 
 async function tick(){
   let data = null;
-  if(CONFIG.API_URL){ data = await fetchLive(); }
-  if(!data){
-    data = DEMO_DATA;
-    if(!CONFIG.API_URL){
-      document.getElementById('updatedLine').textContent = 'ডেমো ডেটা (২৩৫টি সিমুলেটেড এন্ট্রি) — আপনার Google Sheet কানেক্ট করলে এই একই লেআউটে আসল ডেটা দেখাবে।';
+  let statusText = '';
+  let badgeText = 'DEMO DATA';
+  let badgeClass = 'badge';
+
+  if(CONFIG.API_URL){
+    try{
+      data = await fetchLive();
+      lastLiveData = data;
+      lastLiveAt = new Date();
+      consecutiveFailures = 0;
+      badgeText = 'LIVE';
+      badgeClass = 'badge live';
+      statusText = 'সবশেষ আপডেট: ' + lastLiveAt.toLocaleString('bn-BD');
+    }catch(e){
+      consecutiveFailures += 1;
+      if(lastLiveData){
+        // আগে অন্তত একবার সফলভাবে লাইভ ডেটা এসেছে — সেই সঠিক ডেটাই দেখাতে থাকুন,
+        // ভুলভাবে DEMO_DATA দিয়ে বদলে ফেলবেন না (এটাই আগের "দুই রকম ডেটা" সমস্যার কারণ ছিল)।
+        data = lastLiveData;
+        badgeText = 'LIVE (সাময়িক বিলম্ব)';
+        badgeClass = 'badge';
+        statusText = 'নেটওয়ার্ক/সার্ভার সাময়িক সমস্যা — সর্বশেষ সফলভাবে আনা লাইভ ডেটা (' +
+          lastLiveAt.toLocaleString('bn-BD') + ') দেখানো হচ্ছে। পুনরায় চেষ্টা চলছে' +
+          (consecutiveFailures>1 ? ' (' + consecutiveFailures + 'বার ব্যর্থ)' : '') + '...';
+      } else {
+        // এখনো একবারও লাইভ ডেটা আনা সম্ভব হয়নি — শুধু এই অবস্থাতেই ডেমো ডেটা দেখানো হবে।
+        data = DEMO_DATA;
+        badgeText = 'DEMO DATA';
+        badgeClass = 'badge';
+        statusText = 'লাইভ ডেটা আনতে সমস্যা হচ্ছে (JSONP) — যতক্ষণ না প্রথমবার সফল হয়, ততক্ষণ ডেমো ডেটা দেখানো হচ্ছে।';
+      }
     }
+  } else {
+    data = DEMO_DATA;
+    statusText = 'ডেমো ডেটা (২৩৫টি সিমুলেটেড এন্ট্রি) — আপনার Google Sheet কানেক্ট করলে এই একই লেআউটে আসল ডেটা দেখাবে।';
   }
+
+  document.getElementById('modeBadge').textContent = badgeText;
+  document.getElementById('modeBadge').className = badgeClass;
+  document.getElementById('updatedLine').textContent = statusText;
+
   latest = data;
   render(data);
 }
