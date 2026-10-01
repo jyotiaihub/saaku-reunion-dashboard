@@ -138,6 +138,20 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:24px}
   </div>
 
   <div class="card" style="margin-bottom:14px">
+    <h3>প্রতিটি পৃথক ব্যাচ অনুযায়ী বিস্তারিত (৯৯, ০০, ০১...)</h3>
+    <div class="hint">উপরের টেবিলটা ৪টা গ্রুপে (৯৯-১৪ / ১৫-১৬ / ১৭-২০ / Regular) দেখায়; এই টেবিলটা প্রতিটি নির্দিষ্ট ব্যাচ নম্বর আলাদাভাবে দেখায়</div>
+    <div class="tblwrap">
+    <table>
+      <thead><tr>
+        <th>ব্যাচ নম্বর</th><th>গ্রুপ</th><th>রেজিস্ট্রেশন</th><th>Lifetime সদস্য</th><th>মোট কালেকশন</th>
+      </tr></thead>
+      <tbody id="individualBatchBody"></tbody>
+      <tfoot><tr id="individualBatchFoot"></tr></tfoot>
+    </table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
     <h3>ব্যাচ অনুযায়ী গেস্ট/অতিথি বিভাজন</h3>
     <div class="hint">কোন ব্যাচের এলামনাই কয়জন স্পাউস/গেস্ট/ড্রাইভার/শিশু (>৫ বছর) নিয়ে এসেছেন, এবং তাদের থেকে কত টাকা এসেছে</div>
     <div class="tblwrap">
@@ -339,7 +353,31 @@ function aggregate(data){
 
   const totalReg = (data.registrations||[]).length;
   const totalAmount = Object.values(perBatch).reduce((a,b)=>a+b.amount,0);
-  return {perBatch, guestCounts, guestAmounts, totalReg, totalAttendeesGuests, totalAmount, totalLifetime, lifetimeMembers};
+
+  // ---- প্রতিটি পৃথক ব্যাচ নম্বর অনুযায়ী (৯৯, ০০, ০১...) ----
+  const perIndividual = {};
+  (data.registrations||[]).forEach(r=>{
+    const hasNum = r.batchNum !== null && r.batchNum !== undefined && r.batchNum !== '';
+    const key = hasNum ? Number(r.batchNum) : 'other';
+    if(!perIndividual[key]) perIndividual[key] = {count:0, amount:0, lifetime:0, group: r.batch || ''};
+    perIndividual[key].count += 1;
+    perIndividual[key].amount += Number(r.amount)||0;
+    if(r.isLifetime) perIndividual[key].lifetime += 1;
+  });
+
+  return {perBatch, guestCounts, guestAmounts, totalReg, totalAttendeesGuests, totalAmount, totalLifetime, lifetimeMembers, perIndividual};
+}
+
+function individualBatchLabel(key){
+  if(key === 'other') return 'অজানা';
+  const n = Number(key);
+  if(n === 99) return '৯৯';
+  return n < 10 ? ('0'+n) : String(n);
+}
+function individualBatchSortKey(key){
+  if(key === 'other') return 9999;
+  const n = Number(key);
+  return n === 99 ? -1 : n;
 }
 
 function ensureChart(key, ctxId, config){
@@ -503,6 +541,29 @@ function render(data){
        <td>${m.studentId || '<span style="color:var(--muted)">—</span>'}</td><td>${BATCH_LABEL[m.batch]}</td></tr>`
     ).join('');
   }
+  // ---- প্রতিটি পৃথক ব্যাচ টেবিল ----
+  const indivKeys = Object.keys(agg.perIndividual).sort((a,b)=> individualBatchSortKey(a) - individualBatchSortKey(b));
+  const ibBody = document.getElementById('individualBatchBody');
+  if(indivKeys.length === 0){
+    ibBody.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">কোনো ডেটা পাওয়া যায়নি</td></tr>';
+  } else {
+    ibBody.innerHTML = indivKeys.map(k=>{
+      const v = agg.perIndividual[k];
+      return `<tr>
+        <td><b>${individualBatchLabel(k)}</b></td>
+        <td>${v.group ? BATCH_LABEL[v.group] || v.group : '—'}</td>
+        <td>${v.count}</td>
+        <td>${v.lifetime}</td>
+        <td>${fmtTk(v.amount)}</td>
+      </tr>`;
+    }).join('');
+  }
+  const ibTotalCount = indivKeys.reduce((a,k)=>a+agg.perIndividual[k].count,0);
+  const ibTotalLife = indivKeys.reduce((a,k)=>a+agg.perIndividual[k].lifetime,0);
+  const ibTotalAmt = indivKeys.reduce((a,k)=>a+agg.perIndividual[k].amount,0);
+  document.getElementById('individualBatchFoot').innerHTML =
+    `<td>সর্বমোট</td><td>—</td><td>${ibTotalCount}</td><td>${ibTotalLife}</td><td>${fmtTk(ibTotalAmt)}</td>`;
+
   const anyMissingId = lifeMembers.length > 0 && lifeMembers.some(m=>!m.studentId);
   document.getElementById('lifetimeNote').textContent = anyMissingId
     ? 'নোট: স্টুডেন্ট আইডি (রোল) দেখাতে হলে Apps Script-এ "name" ও "studentId" ফিল্ড যোগ করে রিডিপ্লয় করতে হবে (এই ফিল্ডটি এখনো লাইভ ডেটাতে নেই)।'
