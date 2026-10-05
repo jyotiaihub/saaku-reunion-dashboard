@@ -139,14 +139,32 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:24px}
 
   <div class="card" style="margin-bottom:14px">
     <h3>প্রতিটি পৃথক ব্যাচ অনুযায়ী বিস্তারিত (৯৯, ০০, ০১...)</h3>
-    <div class="hint">উপরের টেবিলটা ৪টা গ্রুপে (৯৯-১৪ / ১৫-১৬ / ১৭-২০ / Regular) দেখায়; এই টেবিলটা প্রতিটি নির্দিষ্ট ব্যাচ নম্বর আলাদাভাবে দেখায়</div>
+    <div class="hint">উপরের টেবিলটা ৪টা গ্রুপে (৯৯-১৪ / ১৫-১৬ / ১৭-২০ / Regular) দেখায়; এই টেবিলটা প্রতিটি নির্দিষ্ট ব্যাচ নম্বর আলাদাভাবে — স্পাউস/গেস্ট/ড্রাইভার/শিশু সহ — দেখায়</div>
     <div class="tblwrap">
     <table>
       <thead><tr>
-        <th>ব্যাচ নম্বর</th><th>গ্রুপ</th><th>রেজিস্ট্রেশন</th><th>Lifetime সদস্য</th><th>মোট কালেকশন</th>
+        <th>ব্যাচ নম্বর</th><th>গ্রুপ</th><th>রেজিস্ট্রেশন</th><th>Lifetime সদস্য</th>
+        <th>স্পাউস</th><th>গেস্ট</th><th>ড্রাইভার</th><th>শিশু (>৫)</th><th>মোট কালেকশন</th>
       </tr></thead>
       <tbody id="individualBatchBody"></tbody>
       <tfoot><tr id="individualBatchFoot"></tr></tfoot>
+    </table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="row"><h3 style="margin:0">ব্যাচ নির্বাচন করে পূর্ণ তালিকা</h3>
+      <select id="batchFilterSelect"></select>
+    </div>
+    <div class="hint">যেকোনো একটা নির্দিষ্ট ব্যাচ বেছে নিলে সেই ব্যাচের সব এলামনাইয়ের নাম, স্টুডেন্ট আইডি, Lifetime অবস্থা, সাথে আসা অতিথি ও পরিমাণ এখানে দেখাবে</div>
+    <div class="tblwrap">
+    <table>
+      <thead><tr>
+        <th>#</th><th>নাম</th><th>স্টুডেন্ট আইডি</th><th>Lifetime</th>
+        <th>স্পাউস</th><th>গেস্ট</th><th>ড্রাইভার</th><th>শিশু (>৫)</th><th>পরিমাণ</th>
+      </tr></thead>
+      <tbody id="batchRosterBody"></tbody>
+      <tfoot><tr id="batchRosterFoot"></tr></tfoot>
     </table>
     </div>
   </div>
@@ -359,10 +377,20 @@ function aggregate(data){
   (data.registrations||[]).forEach(r=>{
     const hasNum = r.batchNum !== null && r.batchNum !== undefined && r.batchNum !== '';
     const key = hasNum ? Number(r.batchNum) : 'other';
-    if(!perIndividual[key]) perIndividual[key] = {count:0, amount:0, lifetime:0, group: r.batch || ''};
-    perIndividual[key].count += 1;
-    perIndividual[key].amount += Number(r.amount)||0;
-    if(r.isLifetime) perIndividual[key].lifetime += 1;
+    if(!perIndividual[key]) perIndividual[key] = {
+      count:0, amount:0, lifetime:0, group: r.batch || '',
+      guests:{spouse:0,guest:0,driver:0,child5:0}, members: []
+    };
+    const bucket = perIndividual[key];
+    bucket.count += 1;
+    bucket.amount += Number(r.amount)||0;
+    if(r.isLifetime) bucket.lifetime += 1;
+    GUEST_KEYS.forEach(k=>{ bucket.guests[k] += Number(r[k])||0; });
+    bucket.members.push({
+      name: r.name || '', studentId: r.studentId || '', isLifetime: !!r.isLifetime,
+      spouse: Number(r.spouse)||0, guest: Number(r.guest)||0, driver: Number(r.driver)||0, child5: Number(r.child5)||0,
+      amount: Number(r.amount)||0
+    });
   });
 
   return {perBatch, guestCounts, guestAmounts, totalReg, totalAttendeesGuests, totalAmount, totalLifetime, lifetimeMembers, perIndividual};
@@ -554,6 +582,10 @@ function render(data){
         <td>${v.group ? BATCH_LABEL[v.group] || v.group : '—'}</td>
         <td>${v.count}</td>
         <td>${v.lifetime}</td>
+        <td>${v.guests.spouse}</td>
+        <td>${v.guests.guest}</td>
+        <td>${v.guests.driver}</td>
+        <td>${v.guests.child5}</td>
         <td>${fmtTk(v.amount)}</td>
       </tr>`;
     }).join('');
@@ -561,13 +593,66 @@ function render(data){
   const ibTotalCount = indivKeys.reduce((a,k)=>a+agg.perIndividual[k].count,0);
   const ibTotalLife = indivKeys.reduce((a,k)=>a+agg.perIndividual[k].lifetime,0);
   const ibTotalAmt = indivKeys.reduce((a,k)=>a+agg.perIndividual[k].amount,0);
+  const ibTotalGuests = {spouse:0,guest:0,driver:0,child5:0};
+  indivKeys.forEach(k=> GUEST_KEYS.forEach(g=> ibTotalGuests[g]+=agg.perIndividual[k].guests[g]));
   document.getElementById('individualBatchFoot').innerHTML =
-    `<td>সর্বমোট</td><td>—</td><td>${ibTotalCount}</td><td>${ibTotalLife}</td><td>${fmtTk(ibTotalAmt)}</td>`;
+    `<td>সর্বমোট</td><td>—</td><td>${ibTotalCount}</td><td>${ibTotalLife}</td>
+     <td>${ibTotalGuests.spouse}</td><td>${ibTotalGuests.guest}</td><td>${ibTotalGuests.driver}</td><td>${ibTotalGuests.child5}</td>
+     <td>${fmtTk(ibTotalAmt)}</td>`;
+
+  // ---- ব্যাচ নির্বাচন করে পূর্ণ তালিকা ----
+  const selectEl = document.getElementById('batchFilterSelect');
+  const prevSelected = selectEl.value;
+  const optionsHtml = ['<option value="__all__">সব ব্যাচ (' + agg.totalReg + ' জন)</option>']
+    .concat(indivKeys.map(k=>{
+      const v = agg.perIndividual[k];
+      return `<option value="${k}">${individualBatchLabel(k)} — ${v.group ? (BATCH_LABEL[v.group]||v.group) : ''} (${v.count} জন)</option>`;
+    }));
+  selectEl.innerHTML = optionsHtml.join('');
+  if(prevSelected && (prevSelected === '__all__' || indivKeys.indexOf(prevSelected) !== -1 || indivKeys.map(String).indexOf(prevSelected) !== -1)){
+    selectEl.value = prevSelected;
+  } else {
+    selectEl.value = '__all__';
+  }
+  renderBatchRoster(agg, indivKeys);
 
   const anyMissingId = lifeMembers.length > 0 && lifeMembers.some(m=>!m.studentId);
   document.getElementById('lifetimeNote').textContent = anyMissingId
     ? 'নোট: স্টুডেন্ট আইডি (রোল) দেখাতে হলে Apps Script-এ "name" ও "studentId" ফিল্ড যোগ করে রিডিপ্লয় করতে হবে (এই ফিল্ডটি এখনো লাইভ ডেটাতে নেই)।'
     : '';
+}
+
+function renderBatchRoster(agg, indivKeys){
+  const selectEl = document.getElementById('batchFilterSelect');
+  const sel = selectEl.value || '__all__';
+  let members = [];
+  if(sel === '__all__'){
+    indivKeys.forEach(k=>{
+      agg.perIndividual[k].members.forEach(m=> members.push(Object.assign({}, m, {batchKey:k})));
+    });
+    members.sort((a,b)=> individualBatchSortKey(a.batchKey) - individualBatchSortKey(b.batchKey) || (a.name||'').localeCompare(b.name||''));
+  } else {
+    const bucket = agg.perIndividual[sel] || agg.perIndividual[Number(sel)];
+    members = bucket ? bucket.members.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')) : [];
+  }
+  const body = document.getElementById('batchRosterBody');
+  if(members.length === 0){
+    body.innerHTML = '<tr><td colspan="9" style="color:var(--muted)">কোনো রেজিস্ট্রেশন পাওয়া যায়নি</td></tr>';
+  } else {
+    body.innerHTML = members.map((m,i)=>
+      `<tr>
+        <td>${i+1}</td>
+        <td>${m.name || '<span style="color:var(--muted)">— নাম নেই —</span>'}</td>
+        <td>${m.studentId || '<span style="color:var(--muted)">—</span>'}</td>
+        <td>${m.isLifetime ? '<span class="tag">Lifetime</span>' : '—'}</td>
+        <td>${m.spouse}</td><td>${m.guest}</td><td>${m.driver}</td><td>${m.child5}</td>
+        <td>${fmtTk(m.amount)}</td>
+      </tr>`
+    ).join('');
+  }
+  const totalAmt = members.reduce((a,m)=>a+m.amount,0);
+  document.getElementById('batchRosterFoot').innerHTML =
+    `<td colspan="8">সর্বমোট (${members.length} জন)</td><td>${fmtTk(totalAmt)}</td>`;
 }
 
 function fetchJSONP(url){
@@ -644,7 +729,7 @@ async function tick(){
   render(data);
 }
 
-['regChartType','moneyChartType','lifeChartType','guestChartType'].forEach(id=>{
+['regChartType','moneyChartType','lifeChartType','guestChartType','batchFilterSelect'].forEach(id=>{
   document.getElementById(id).addEventListener('change', ()=> latest && render(latest));
 });
 
